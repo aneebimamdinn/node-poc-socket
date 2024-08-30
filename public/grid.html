@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node P.O.C</title>
+    <style>
+    </style>
+</head>
+<style>
+    .green{
+        background-color: green;
+    }
+    .red{
+        background-color: red;
+    }
+    div{
+        min-width: 15px;
+        min-height: 15px;
+    }
+</style>
+<body>
+    <div class="container" id="grid">
+    </div>
+    <button id="undo-button" onClick="undo()">Undo</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io.connect();
+        socket.on('userDraw', (data) =>{
+            toggleClass(data.msg);
+        });
+        socket.on('init', (data) =>{
+            const actions = JSON.parse(data.msg);
+            if(actions.length > 0){
+                for (let i = 0; i < actions.length; i++) {
+                    toggleClass(actions[i]);
+                    
+                }
+            }
+        });
+
+        sendMessage = (event, id = false) => {
+            if(event){
+                events.push(event.target.id);
+                socket.emit('userDraw', {msg : event.target.id});
+            }else{
+                socket.emit('userDraw', {msg : id});
+            }
+        }
+
+        socket.on('connect', () => {
+            // socket.emit('message', {msg:'user connected'});
+        });
+
+        const rows = 50;
+        const columns = 80;
+        const events = [];
+        const undo = () => {
+            if(events.length <= 0){
+                alert("No action to undo");
+                return;
+            }
+            const id = events.pop();
+            sendMessage(false, id);
+
+        }
+        const toggleClass = (id) => {
+            const elem = document.getElementById(id);
+            //TO Track the events for doing undo functionality
+            if(elem.classList[0]  == 'green'){
+                elem.classList.remove('green');
+                elem.classList.add('red');
+            }else{
+                elem.classList.add('green');
+                elem.classList.remove('red');
+            }
+        }
+        
+        const createTable = (rows, cols) => {
+            const table = document.createElement('table');
+            for (let i = 0; i < rows; i++) {
+                const tr = document.createElement('tr');
+
+                for (let j = 0; j < cols; j++) {
+                    const td = document.createElement('td');
+                    const div = document.createElement('div');
+                    div.id = `box-${i}-${j}`;
+                    div.classList.add('green');
+                    div.addEventListener('click', sendMessage);
+                    td.appendChild(div); 
+                    tr.appendChild(td);
+                }
+
+                table.appendChild(tr);
+            }
+
+            document.getElementById('grid').appendChild(table);
+        }
+
+
+        createTable(rows, columns);
+
+    </script>
+</body>
+</html>
